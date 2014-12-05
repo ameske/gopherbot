@@ -37,7 +37,8 @@ func main() {
 		log.Fatalf("Could not connect to IRC server: %s", err.Error())
 	}
 
-	dieExtender.Register(registry)
+	dieExtension.Register(registry)
+	botsnackExtension.Register(registry)
 
 	con.AddCallback("001", joinServer)
 	con.AddCallback("JOIN", introduce)

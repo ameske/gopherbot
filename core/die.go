@@ -1,15 +1,20 @@
-package main
+package core
 
 import "github.com/thoj/go-ircevent"
 
+// Die is a core extension of gopherbot that illustrates a simple use
+// of the gopherbot extension system.
+//
+// Commands:
+//    die - haha person in chat who is sick of gopherbot
 type Die struct{}
 
 var (
 	dieExtension Botsnack
 )
 
-func (b Die) Register(registry Extensions) {
-	registry["die"] = botsnackExtension
+func (b Die) Register(registry *Extensions) {
+	registry.Register("die", dieExtension)
 }
 
 func (b Die) Commands() []string {

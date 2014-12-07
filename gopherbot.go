@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 
+	"github.com/ameske/gopherbot/core"
 	"github.com/thoj/go-ircevent"
 	"gopkg.in/yaml.v2"
 )
@@ -16,8 +17,6 @@ type gopherbotConfig struct {
 var (
 	config       gopherbotConfig
 	startingRoom = "#gopherbot"
-	con          *irc.Connection
-	registry     = make(Extensions)
 )
 
 func main() {
@@ -31,43 +30,39 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	con = irc.IRC("gopherbot", "gopherbot")
+	con := irc.IRC("gopherbot", "gopherbot")
 	err = con.Connect(config.Server)
 	if err != nil {
 		log.Fatalf("Could not connect to IRC server: %s", err.Error())
 	}
 
-	dieExtension.Register(registry)
-	botsnackExtension.Register(registry)
+	registry := core.NewExtensions(con)
 
-	con.AddCallback("001", joinServer)
-	con.AddCallback("JOIN", introduce)
-	con.AddCallback("INVITE", acceptInvite)
-	con.AddCallback("PRIVMSG", selectExtender)
+	// Join the starting room for gopherbot
+	con.AddCallback("001", func(e *irc.Event) {
+		con.Join(config.StartingRoom)
+	})
+
+	// Announce the arrival of gopherbot. Gophers have manners!
+	con.AddCallback("JOIN", func(e *irc.Event) {
+		for _, room := range e.Arguments {
+			con.Privmsg(room, "Oh hey guys, this is Gopherbot")
+		}
+	})
+
+	// Join the room(s) that gopherbot was invited to. Gopher are friendly creatures!
+	con.AddCallback("INVITE", func(e *irc.Event) {
+		if len(e.Arguments) != 2 {
+			return
+		}
+
+		if e.Arguments[0] == "gopherbot" {
+			con.Join(e.Arguments[1])
+		}
+	})
+
+	// Gophers can to many things. Select the trick that a user requested.
+	con.AddCallback("PRIVMSG", registry.Select)
 
 	con.Loop()
-}
-
-// joinServer joins the starting point for gopherbot
-func joinServer(e *irc.Event) {
-	con.Join(config.StartingRoom)
-}
-
-// introduce announces the arrival of gopherbot. Gophers have manners!
-func introduce(e *irc.Event) {
-	for _, room := range e.Arguments {
-		con.Privmsg(room, "Oh hey guys, this is Gopherbot!")
-	}
-
-}
-
-// acceptInvite joins the room the gopherbot was invited to. Gophes are friendly creatures!
-func acceptInvite(e *irc.Event) {
-	if len(e.Arguments) != 2 {
-		return
-	}
-
-	if e.Arguments[0] == "gopherbot" {
-		con.Join(e.Arguments[1])
-	}
 }

@@ -9,7 +9,6 @@ import (
 
 // An Extender can be used in gopherbot to provide additional functionality to the core
 type Extender interface {
-	Register(e *Extensions)
 	Commands() []string
 	Process(con *irc.Connection, channel string, args []string)
 }
@@ -28,10 +27,6 @@ func NewExtensions(con *irc.Connection) *Extensions {
 		con:      con,
 		registry: make(map[string]Extender),
 	}
-
-	botsnackExtension.Register(e)
-	dieExtension.Register(e)
-	wotdExtension.Register(e)
 
 	return e
 }

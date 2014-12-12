@@ -1,4 +1,4 @@
-package core
+package coreext
 
 import "github.com/thoj/go-ircevent"
 
@@ -10,12 +10,8 @@ import "github.com/thoj/go-ircevent"
 type Die struct{}
 
 var (
-	dieExtension Botsnack
+	dieExtension Die
 )
-
-func (b Die) Register(registry *Extensions) {
-	registry.Register("die", dieExtension)
-}
 
 func (b Die) Commands() []string {
 	return []string{"die - go ahead, try it"}

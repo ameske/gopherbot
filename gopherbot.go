@@ -5,6 +5,8 @@ import (
 	"log"
 
 	"github.com/ameske/gopherbot/core"
+	"github.com/ameske/gopherbot/extensions/coreext"
+	"github.com/ameske/gopherbot/extensions/wordnikext"
 	"github.com/thoj/go-ircevent"
 	"gopkg.in/yaml.v2"
 )
@@ -37,6 +39,8 @@ func main() {
 	}
 
 	registry := core.NewExtensions(con)
+	coreext.Register(registry)
+	wordnikext.Register(registry)
 
 	// Join the starting room for gopherbot
 	con.AddCallback("001", func(e *irc.Event) {

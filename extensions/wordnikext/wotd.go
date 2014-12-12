@@ -1,51 +1,24 @@
-package core
+package wordnikext
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
+
 	"time"
 
-	"github.com/ameske/wordnik-go"
 	"github.com/thoj/go-ircevent"
-	"gopkg.in/yaml.v2"
 )
 
-type WOTD struct{}
-
-type WordnikConfig struct {
-	ApiKey string `yaml:"ApiKey"`
-}
+type wotd struct{}
 
 var (
-	wotdExtension WOTD
-	wordnikAPI    *wordnik.APIClient
+	wotdExtension wotd
 )
 
-func init() {
-	var config WordnikConfig
-	cbytes, err := ioutil.ReadFile("wordnik.yaml")
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	err = yaml.Unmarshal(cbytes, &config)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	wordnikAPI = wordnik.NewAPIClient(config.ApiKey)
-}
-
-func (w WOTD) Register(e *Extensions) {
-	e.Register("wotd", wotdExtension)
-}
-
-func (w WOTD) Commands() []string {
+func (w wotd) Commands() []string {
 	return []string{"wotd - wordnik.com's word of the day"}
 }
 
-func (w WOTD) Process(con *irc.Connection, channel string, args []string) {
+func (w wotd) Process(con *irc.Connection, channel string, args []string) {
 	wotd, err := wordnikAPI.WordOfTheDay(time.Now())
 	if err != nil {
 		con.Privmsg(channel, "I'm sorry, there was a problem with the wordnik API!")

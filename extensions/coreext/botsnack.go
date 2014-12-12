@@ -1,4 +1,4 @@
-package core
+package coreext
 
 import "github.com/thoj/go-ircevent"
 
@@ -7,20 +7,16 @@ import "github.com/thoj/go-ircevent"
 //
 // Commands:
 //    botsnack - eats the "snack"
-type Botsnack struct{}
+type botsnack struct{}
 
 var (
-	botsnackExtension Botsnack
+	botsnackExtension botsnack
 )
 
-func (b Botsnack) Register(registry *Extensions) {
-	registry.Register("botsnack", botsnackExtension)
-}
-
-func (b Botsnack) Commands() []string {
+func (b botsnack) Commands() []string {
 	return []string{"botsnack - do feed the gophers"}
 }
 
-func (b Botsnack) Process(con *irc.Connection, channel string, args []string) {
+func (b botsnack) Process(con *irc.Connection, channel string, args []string) {
 	con.Privmsg(channel, "Omnomnomnomnomnomnom!")
 }

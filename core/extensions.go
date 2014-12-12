@@ -31,6 +31,7 @@ func NewExtensions(con *irc.Connection) *Extensions {
 
 	botsnackExtension.Register(e)
 	dieExtension.Register(e)
+	wotdExtension.Register(e)
 
 	return e
 }

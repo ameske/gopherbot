@@ -18,7 +18,7 @@ func (w wotd) Commands() []string {
 	return []string{"wotd - wordnik.com's word of the day"}
 }
 
-func (w wotd) Process(con *irc.Connection, channel string, args []string) {
+func (w wotd) Process(con *irc.Connection, channel string, user string, args []string) {
 	wotd, err := wordnikAPI.WordOfTheDay(time.Now())
 	if err != nil {
 		con.Privmsg(channel, "I'm sorry, there was a problem with the wordnik API!")

@@ -21,12 +21,12 @@ func (h hangman) Commands() []string {
 		"hangman stats - return player statistics"}
 }
 
-func (h hangman) Process(con *irc.Connection, channel string, args []string) {
+func (h hangman) Process(con *irc.Connection, channel string, user string, args []string) {
 	if len(args) == 2 && args[1] == "stats" {
 		returnStats()
 	} else if len(args) == 2 && len(args[1]) == 1 {
 		argsLower := strings.ToLower(args[1])
-		playHangman(con, channel, []byte(argsLower)[0])
+		playHangman(con, channel, user, []byte(argsLower)[0])
 	} else {
 		con.Privmsg(channel, "That's not a valid hangman command. Did you mean one of these?")
 		core.PrintCommands(con, channel, h.Commands())
@@ -80,7 +80,7 @@ func drawGameState() []byte {
 	return state
 }
 
-func playHangman(con *irc.Connection, channel string, guess byte) {
+func playHangman(con *irc.Connection, channel string, user string, guess byte) {
 	// We don't have a game currently going
 	if currentGame == nil {
 		newGame()

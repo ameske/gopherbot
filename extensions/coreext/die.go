@@ -17,6 +17,6 @@ func (b Die) Commands() []string {
 	return []string{"die - go ahead, try it"}
 }
 
-func (b Die) Process(con *irc.Connection, channel string, args []string) {
+func (b Die) Process(con *irc.Connection, channel string, user string, args []string) {
 	con.Privmsg(channel, "Gophers cannot be killed! Go and write some python code, puny mortal.")
 }

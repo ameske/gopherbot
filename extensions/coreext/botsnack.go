@@ -17,6 +17,6 @@ func (b botsnack) Commands() []string {
 	return []string{"botsnack - do feed the gophers"}
 }
 
-func (b botsnack) Process(con *irc.Connection, channel string, args []string) {
+func (b botsnack) Process(con *irc.Connection, channel string, user string, args []string) {
 	con.Privmsg(channel, "Omnomnomnomnomnomnom!")
 }

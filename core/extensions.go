@@ -10,7 +10,7 @@ import (
 // An Extender can be used in gopherbot to provide additional functionality to the core
 type Extender interface {
 	Commands() []string
-	Process(con *irc.Connection, channel string, args []string)
+	Process(con *irc.Connection, channel string, user string, args []string)
 }
 
 // Extensions contains information for extension handling in gopherbot
@@ -67,7 +67,7 @@ func (ex *Extensions) Select(e *irc.Event) {
 		ex.help(channel)
 		return
 	} else if handle, ok := ex.registry[command]; ok {
-		handle.Process(ex.con, channel, message[1:])
+		handle.Process(ex.con, channel, e.User, message[1:])
 		return
 	}
 

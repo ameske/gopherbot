@@ -2,6 +2,8 @@ package wordnikext
 
 import (
 	"fmt"
+	"log"
+	"strconv"
 	"strings"
 
 	"github.com/ameske/gopherbot/core"
@@ -84,28 +86,31 @@ func playHangman(con *irc.Connection, channel string, guess byte) {
 		newGame()
 	}
 
-	if isDuplicateGuess(guess) {
+	if duplicateGuess(guess) {
 		con.Privmsg(channel, fmt.Sprintf("You already guessed %c!", int(guess)))
+		return
 	}
 
-	if !isSuccessfulGuess(guess) {
+	if !successfulGuess(guess) {
 		con.Privmsg(channel, fmt.Sprintf("Sorry, there were no %c's", int(guess)))
 		currentGame.attempts--
+		return
 	}
 
-	if won() {
+	switch {
+	case won():
 		con.Privmsg(channel, fmt.Sprintf("Congrats! You solved the word!"))
-		currentGame = nil
-	} else if lost() {
+		processGame()
+	case lost():
 		con.Privmsg(channel, fmt.Sprintf("Sorry, you lose! The word was %s", currentGame.word))
-		currentGame = nil
-	} else {
+		processGame()
+	default:
 		msg := drawGameState()
 		con.Privmsg(channel, string(msg)+fmt.Sprintf(" (%d attempts left)", currentGame.attempts))
 	}
 }
 
-func isDuplicateGuess(guess byte) bool {
+func duplicateGuess(guess byte) bool {
 	for _, ch := range currentGame.guesses {
 		if ch == guess {
 			return true
@@ -115,7 +120,7 @@ func isDuplicateGuess(guess byte) bool {
 	return false
 }
 
-func isSuccessfulGuess(guess byte) bool {
+func successfulGuess(guess byte) bool {
 	currentGame.guesses = append(currentGame.guesses, guess)
 	success := false
 	for i, ch := range currentGame.word {
@@ -140,6 +145,27 @@ func won() bool {
 	}
 
 	return true
+}
+
+func processGame() {
+	prevLetterCount, err := core.Recall("hangman.letters.total")
+	if err != nil {
+		log.Printf("WARNING: %s", err.Error())
+		return
+	}
+
+	plcInt, err := strconv.ParseInt(prevLetterCount, 10, 64)
+	if err != nil {
+		log.Printf("WARNING: %s", err.Error())
+		return
+	}
+	plcInt += int64(len(currentGame.word))
+
+	err = core.Remember("hangman.letters.total", plcInt)
+	if err != nil {
+		log.Printf("WARNING: %s", err.Error())
+		return
+	}
 }
 
 type gameStats struct {

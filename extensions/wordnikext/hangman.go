@@ -23,7 +23,7 @@ func (h hangman) Commands() []string {
 
 func (h hangman) Process(con *irc.Connection, channel string, user string, args []string) {
 	if len(args) == 2 && args[1] == "stats" {
-		returnStats()
+		returnStats(con, channel)
 	} else if len(args) == 2 && len(args[1]) == 1 {
 		argsLower := strings.ToLower(args[1])
 		playHangman(con, channel, user, []byte(argsLower)[0])
@@ -35,28 +35,22 @@ func (h hangman) Process(con *irc.Connection, channel string, user string, args 
 }
 
 type game struct {
-	word     []byte
-	correct  []bool
-	guesses  []byte
-	stats    gameStats
-	attempts int
+	word      []byte
+	correct   []bool
+	guesses   []byte
+	userStats map[string]int
+	attempts  int
 }
 
 func newGame() {
 	w, _ := wordnikAPI.RandomDictionaryWordOfLength(5, 12)
 
-	guesses := make([]byte, 0)
-	correct := make([]bool, len(w.Word))
-	for i, _ := range correct {
-		correct[i] = false
-	}
-
 	currentGame = &game{
-		word:     []byte(strings.ToLower(w.Word)),
-		correct:  correct,
-		guesses:  guesses,
-		stats:    newGameStats(),
-		attempts: 8,
+		word:      []byte(strings.ToLower(w.Word)),
+		correct:   make([]bool, len(w.Word)),
+		guesses:   make([]byte, 0),
+		userStats: make(map[string]int),
+		attempts:  8,
 	}
 }
 
@@ -97,13 +91,15 @@ func playHangman(con *irc.Connection, channel string, user string, guess byte) {
 		return
 	}
 
+	currentGame.userStats[user] = currentGame.userStats[user] + 1
+
 	switch {
 	case won():
 		con.Privmsg(channel, fmt.Sprintf("Congrats! You solved the word!"))
-		processGame()
+		updateStats()
 	case lost():
 		con.Privmsg(channel, fmt.Sprintf("Sorry, you lose! The word was %s", currentGame.word))
-		processGame()
+		updateStats()
 	default:
 		msg := drawGameState()
 		con.Privmsg(channel, string(msg)+fmt.Sprintf(" (%d attempts left)", currentGame.attempts))
@@ -147,11 +143,10 @@ func won() bool {
 	return true
 }
 
-func processGame() {
+func updateStats() {
 	prevLetterCount, err := core.Recall("hangman.letters.total")
 	if err != nil {
-		log.Printf("WARNING: %s", err.Error())
-		return
+		prevLetterCount = "0"
 	}
 
 	plcInt, err := strconv.ParseInt(prevLetterCount, 10, 64)
@@ -166,19 +161,56 @@ func processGame() {
 		log.Printf("WARNING: %s", err.Error())
 		return
 	}
-}
 
-type gameStats struct {
-	total     int
-	userStats map[string]int
-}
+	for k, v := range currentGame.userStats {
+		prevUserLetterCount, err := core.RecallHash("hangman.letters.user", k)
+		if err != nil {
+			prevUserLetterCount = "0"
+		}
 
-func newGameStats() gameStats {
-	return gameStats{
-		userStats: make(map[string]int),
+		pulcInt, err := strconv.ParseInt(prevUserLetterCount, 10, 64)
+		if err != nil {
+			log.Printf("WARNING: %s", err.Error())
+			return
+		}
+		pulcInt += int64(v)
+
+		err = core.RememberHash("hangman.letters.user", k, pulcInt)
+		if err != nil {
+			log.Printf("WARNING: %s", err.Error())
+			return
+		}
 	}
 }
 
-func returnStats() {
-	// TODO - Go to the brain for lifetime stats
+func returnStats(con *irc.Connection, channel string) {
+	totalLetters, err := core.Recall("hangman.letters.total")
+	if err != nil {
+		log.Printf("WARNING: %s", err.Error())
+		con.Privmsg(channel, "Sorry, I couldn't retrieve stats at the moment")
+		return
+	}
+
+	tlInt, err := strconv.ParseInt(totalLetters, 10, 64)
+	if err != nil {
+		log.Printf("WARNING: %s", err.Error())
+		return
+	}
+
+	players, err := core.RecallHashAll("hangman.letters.user")
+	if err != nil {
+		log.Printf("WARNING: %s", err.Error())
+		con.Privmsg(channel, "Sorry, I couldn't retrieve stats at the moment")
+		return
+	}
+
+	con.Privmsg(channel, fmt.Sprintf("Total Letters: %d", tlInt))
+	for i := 0; i < len(players); i += 2 {
+		uInt, err := strconv.ParseInt(players[i+1], 10, 64)
+		if err != nil {
+			log.Printf("WARNING: %s", err.Error())
+			return
+		}
+		con.Privmsg(channel, fmt.Sprintf("\t%s: %d letters", players[i], uInt))
+	}
 }
